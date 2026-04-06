@@ -1,0 +1,224 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+
+@baseUrl = https://localhost:7001
+@orderId = 1
+
+###############################################################################
+# PLACE ORDER - Đặt đơn hàng mới
+###############################################################################
+
+### 1. Place Order - Đơn hàng cơ bản (không có discount code)
+POST {{baseUrl}}/api/Orders
+Content-Type: application/json
+
+{
+  "customerEmail": "nguyen.van.a@example.com",
+  "customerName": "Nguyễn Văn A",
+  "shippingAddress": "123 Đường Lê Lợi, Quận 1, TP.HCM",
+  "notes": "Giao hàng trong giờ hành chính",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2
+    },
+    {
+      "productId": 2,
+      "quantity": 1
+    }
+  ]
+}
+
+### 2. Place Order - Đơn hàng có discount code
+POST {{baseUrl}}/api/Orders
+Content-Type: application/json
+
+{
+  "customerEmail": "tran.thi.b@example.com",
+  "customerName": "Trần Thị B",
+  "shippingAddress": "456 Nguyễn Huệ, Quận 1, TP.HCM",
+  "discountCode": "SUMMER2024",
+  "notes": "Gọi điện trước khi giao",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 5
+    },
+    {
+      "productId": 3,
+      "quantity": 3
+    }
+  ]
+}
+
+### 3. Place Order - Đơn hàng lớn (trigger discount tự động >= 1 triệu)
+POST {{baseUrl}}/api/Orders
+Content-Type: application/json
+
+{
+  "customerEmail": "le.van.c@example.com",
+  "customerName": "Lê Văn C",
+  "shippingAddress": "789 Võ Văn Tần, Quận 3, TP.HCM",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 20
+    },
+    {
+      "productId": 2,
+      "quantity": 15
+    },
+    {
+      "productId": 3,
+      "quantity": 10
+    }
+  ]
+}
+
+###############################################################################
+# GET ORDERS - Lấy danh sách đơn hàng
+###############################################################################
+
+### 4. Get All Orders (mặc định lấy 30 ngày gần nhất)
+GET {{baseUrl}}/api/Orders
+
+### 5. Get Orders - Filter by status
+GET {{baseUrl}}/api/Orders?status=Pending
+
+### 6. Get Orders - Filter by email
+GET {{baseUrl}}/api/Orders?email=nguyen.van.a@example.com
+
+### 7. Get Orders - Filter by date range
+GET {{baseUrl}}/api/Orders?from=2024-01-01&to=2024-12-31
+
+### 8. Get Orders - Multiple filters
+GET {{baseUrl}}/api/Orders?status=Confirmed&email=tran.thi.b@example.com&from=2024-01-01
+
+###############################################################################
+# GET ORDER BY ID - Lấy chi tiết đơn hàng
+###############################################################################
+
+### 9. Get Order by ID
+GET {{baseUrl}}/api/Orders/{{orderId}}
+
+### 10. Get Order by ID - Non-existing order
+GET {{baseUrl}}/api/Orders/9999
+
+###############################################################################
+# UPDATE ORDER STATUS - Cập nhật trạng thái đơn hàng
+###############################################################################
+
+### 11. Update Status - Pending to Confirmed
+PATCH {{baseUrl}}/api/Orders/{{orderId}}/status
+Content-Type: application/json
+
+{
+  "status": "Confirmed",
+  "notes": "Đã xác nhận với khách hàng qua điện thoại"
+}
+
+### 12. Update Status - Confirmed to Shipped
+PATCH {{baseUrl}}/api/Orders/{{orderId}}/status
+Content-Type: application/json
+
+{
+  "status": "Shipped",
+  "notes": "Đã giao cho đơn vị vận chuyển"
+}
+
+### 13. Update Status - Pending to Cancelled
+PATCH {{baseUrl}}/api/Orders/{{orderId}}/status
+Content-Type: application/json
+
+{
+  "status": "Cancelled",
+  "notes": "Khách hàng yêu cầu hủy đơn"
+}
+
+###############################################################################
+# CANCEL ORDER - Hủy đơn hàng
+###############################################################################
+
+### 14. Cancel Order - With reason
+DELETE {{baseUrl}}/api/Orders/{{orderId}}?reason=Khách hàng đổi ý
+
+### 15. Cancel Order - Without reason
+DELETE {{baseUrl}}/api/Orders/{{orderId}}
+
+###############################################################################
+# TEST CASES - Các trường hợp lỗi
+###############################################################################
+
+### 16. ERROR - Đơn hàng không có sản phẩm
+POST {{baseUrl}}/api/Orders
+Content-Type: application/json
+
+{
+  "customerEmail": "test@example.com",
+  "customerName": "Test User",
+  "shippingAddress": "Test Address",
+  "items": []
+}
+
+### 17. ERROR - Email không hợp lệ
+POST {{baseUrl}}/api/Orders
+Content-Type: application/json
+
+{
+  "customerEmail": "invalid-email",
+  "customerName": "Test User",
+  "shippingAddress": "Test Address",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ]
+}
+
+### 18. ERROR - Số lượng = 0
+POST {{baseUrl}}/api/Orders
+Content-Type: application/json
+
+{
+  "customerEmail": "test@example.com",
+  "customerName": "Test User",
+  "shippingAddress": "Test Address",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 0
+    }
+  ]
+}
+
+### 19. ERROR - Số lượng > 100
+POST {{baseUrl}}/api/Orders
+Content-Type: application/json
+
+{
+  "customerEmail": "test@example.com",
+  "customerName": "Test User",
+  "shippingAddress": "Test Address",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 150
+    }
+  ]
+}
+
+### 20. ERROR - Product không tồn tại
+POST {{baseUrl}}/api/Orders
+Content-Type: application/json
+
+{
+  "customerEmail": "test@example.com",
+  "customerName": "Test User",
+  "shippingAddress": "Test Address",
+  "items": [
+    {
+      "productId": 99999,
+      "quantity": 1
+    }
+  ]
+}
