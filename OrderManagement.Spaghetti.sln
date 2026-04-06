@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11527.330 d18.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderManagement.Spaghetti", "OrderManagement.Spaghetti\OrderManagement.Spaghetti.csproj", "{7BDB9DAC-DAEB-23A2-377F-2DAE4FDDBB31}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7BDB9DAC-DAEB-23A2-377F-2DAE4FDDBB31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BDB9DAC-DAEB-23A2-377F-2DAE4FDDBB31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BDB9DAC-DAEB-23A2-377F-2DAE4FDDBB31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BDB9DAC-DAEB-23A2-377F-2DAE4FDDBB31}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {01578C17-3137-4CE4-9E55-988320AB3A0A}
+	EndGlobalSection
+EndGlobal
