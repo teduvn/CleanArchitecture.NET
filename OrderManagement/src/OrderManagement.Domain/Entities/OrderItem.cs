@@ -24,6 +24,11 @@ namespace OrderManagement.Domain.Entities
             Guid orderId, Guid productId,
             string productName, Money unitPrice, int quantity)
         {
+            if (quantity <= 0)
+                throw new DomainException("Quantity phải lớn hơn 0");
+            if (unitPrice.Amount <= 0)
+                throw new DomainException("Giá phải lớn hơn 0");
+
             // internal — chỉ Order mới tạo được OrderItem
             return new OrderItem
             {

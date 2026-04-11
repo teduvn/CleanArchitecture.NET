@@ -28,6 +28,12 @@ namespace OrderManagement.Domain.Entities
         public static Order Create(Guid customerId, Address shippingAddress)
         {
             ArgumentException.ThrowIfNullOrEmpty(customerId.ToString());
+            if (customerId == Guid.Empty)
+                throw new DomainException("CustomerId không hợp lệ");
+            if (shippingAddress is null)
+                throw new DomainException("Địa chỉ giao hàng không được để trống");
+
+            //order.RaiseDomainEvent(new OrderCreatedEvent(order.Id));
 
             return new Order
             {
@@ -43,6 +49,8 @@ namespace OrderManagement.Domain.Entities
         // Business method — thêm item qua Order, không tạo OrderItem trực tiếp
         public void AddItem(Guid productId, string productName, Money unitPrice, int quantity)
         {
+            EnsureOrderIsModifiable();
+
             if (Status != OrderStatus.Draft)
                 throw new DomainException("Chỉ có thể thêm item vào đơn hàng ở trạng thái Draft.");
 
@@ -66,6 +74,8 @@ namespace OrderManagement.Domain.Entities
 
         public void RemoveItem(Guid orderItemId)
         {
+            EnsureOrderIsModifiable();
+
             if (Status != OrderStatus.Draft)
                 throw new DomainException("Không thể xoá item khỏi đơn đã được xử lý.");
 
@@ -87,6 +97,8 @@ namespace OrderManagement.Domain.Entities
             Status = OrderStatus.Placed;
             UpdatedAt = DateTime.UtcNow;
             // Domain event sẽ được cover ở bài 2.3
+            //RaiseDomainEvent(new OrderPlacedEvent(Id, CustomerId, TotalAmount));
+
         }
 
         private void RecalculateTotal()
@@ -95,6 +107,17 @@ namespace OrderManagement.Domain.Entities
                 Money.Zero("VND"),
                 (sum, item) => sum.Add(item.Subtotal));
         }
+
+        // ======================================================
+        // PRIVATE HELPER - enforce invariant tập trung
+        // ======================================================
+        private void EnsureOrderIsModifiable()
+        {
+            if (Status is OrderStatus.Shipped or OrderStatus.Cancelled)
+                throw new DomainException(
+                    $"Không thể chỉnh sửa Order ở trạng thái {Status}");
+        }
+
     }
 
     public enum OrderStatus
