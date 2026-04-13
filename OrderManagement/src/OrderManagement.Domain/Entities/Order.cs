@@ -1,4 +1,5 @@
 ﻿using OrderManagement.Domain.Common;
+using OrderManagement.Domain.Events;
 using OrderManagement.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -6,13 +7,14 @@ using System.Text;
 
 namespace OrderManagement.Domain.Entities
 {
-    public sealed class Order : Entity<Guid>
+    public sealed class Order : Entity
     {
         private readonly List<OrderItem> _items = new();
 
         // Private setters — chỉ thay đổi qua method, không assign trực tiếp từ ngoài
         public Guid CustomerId { get; private set; }
         public Address ShippingAddress { get; private set; } = null!;
+        public string CustomerEmail { get; init; } = string.Empty;
         public OrderStatus Status { get; private set; }
         public Money TotalAmount { get; private set; } = null!;
         public DateTime CreatedAt { get; private set; }
@@ -25,7 +27,7 @@ namespace OrderManagement.Domain.Entities
         private Order() { }
 
         // Factory method thay vì constructor public — kiểm soát invariant
-        public static Order Create(Guid customerId, Address shippingAddress)
+        public static Order Create(Guid customerId, Address shippingAddress, IEnumerable<OrderItem> items)
         {
             ArgumentException.ThrowIfNullOrEmpty(customerId.ToString());
             if (customerId == Guid.Empty)
@@ -33,9 +35,7 @@ namespace OrderManagement.Domain.Entities
             if (shippingAddress is null)
                 throw new DomainException("Địa chỉ giao hàng không được để trống");
 
-            //order.RaiseDomainEvent(new OrderCreatedEvent(order.Id));
-
-            return new Order
+            var order = new Order
             {
                 Id = Guid.NewGuid(),
                 CustomerId = customerId,
@@ -44,6 +44,24 @@ namespace OrderManagement.Domain.Entities
                 TotalAmount = Money.Zero("VND"),  // default VND, sẽ recalculate
                 CreatedAt = DateTime.UtcNow
             };
+
+            foreach (var item in items)
+                order.AddItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity);
+
+            // Raise event — Order tự quyết định khi nào raise
+            order.RaiseDomainEvent(new OrderPlacedEvent
+            {
+                OrderId = order.Id,
+                CustomerId = order.CustomerId,
+                CustomerEmail = order.CustomerEmail,
+                TotalAmount = order.TotalAmount.Amount,
+                Items = order._items.Select(i => new OrderItemSnapshot(
+                    i.ProductId, i.ProductName, i.Quantity, i.UnitPrice.Amount
+                )).ToList()
+            });
+
+
+            return order;   
         }
 
         // Business method — thêm item qua Order, không tạo OrderItem trực tiếp
@@ -100,6 +118,24 @@ namespace OrderManagement.Domain.Entities
             //RaiseDomainEvent(new OrderPlacedEvent(Id, CustomerId, TotalAmount));
 
         }
+
+        public void Ship(string trackingNumber, DateTime estimatedDelivery)
+        {
+            if (Status != OrderStatus.Confirmed)
+                throw new DomainException("Chỉ confirmed order mới được ship");
+
+            Status = OrderStatus.Shipped;
+
+            RaiseDomainEvent(new OrderShippedEvent
+            {
+                OrderId = Id,
+                CustomerId = CustomerId,
+                CustomerEmail = CustomerEmail,
+                TrackingNumber = trackingNumber,
+                EstimatedDelivery = estimatedDelivery
+            });
+        }
+
 
         private void RecalculateTotal()
         {

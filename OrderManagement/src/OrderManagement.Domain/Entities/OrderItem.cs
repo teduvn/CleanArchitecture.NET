@@ -6,7 +6,7 @@ using System.Text;
 
 namespace OrderManagement.Domain.Entities
 {
-    public sealed class OrderItem : Entity<Guid>
+    public sealed class OrderItem : Entity
     {
         public Guid OrderId { get; private set; }
         public Guid ProductId { get; private set; }
