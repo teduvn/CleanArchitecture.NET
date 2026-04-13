@@ -1,38 +1,45 @@
-﻿using OrderManagement.Domain.Common;
+﻿using MediatR;
+using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Entities;
+using OrderManagement.Domain.Interfaces;
+using OrderManagement.Domain.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace OrderManagement.Application.Orders.Commands
 {
-    internal class PlaceOrderCommandHandler
+    public class PlaceOrderCommandHandler : IRequestHandler<PlaceOrderCommand, Guid>
     {
-        //public async Task<Result> Handle(AddItemToOrderCommand command,
-        //                          CancellationToken ct)
-        //{
-        //    var order = await _orderRepository.GetByIdAsync(command.OrderId, ct)
-        //        ?? throw new NotFoundException(nameof(Order), command.OrderId);
+        private readonly IOrderRepository _orderRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
+        public PlaceOrderCommandHandler(
+            IOrderRepository orderRepository,
+            IUnitOfWork unitOfWork)
+        {
+            _orderRepository = orderRepository;
+            _unitOfWork = unitOfWork;
+        }
 
-        //    var product = await _productRepository.GetByIdAsync(command.ProductId, ct)
-        //        ?? throw new NotFoundException(nameof(Product), command.ProductId);
+        public async Task<Guid> Handle(
+            PlaceOrderCommand command,
+            CancellationToken cancellationToken)
+        {
+            // 1. Tạo order từ domain logic
+            var order = Order.Create(command.CustomerId, command.ShippingAddress, new List<OrderItem>());
 
+            foreach (var item in command.Items)
+                order.AddItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity);
 
-        //    // Tất cả invariant được kiểm tra bên trong Order
-        //    order.AddItem(
-        //        product.Id,
-        //        product.Name,
-        //        command.Quantity,
-        //        product.Price);
+            // 2. Đăng ký vào repository (chưa commit)
+            _orderRepository.Add(order);
 
+            // 3. Commit toàn bộ thay đổi — một lần duy nhất
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        //    // Chỉ save Order — EF Core cascade save OrderItem
-        //    await _orderRepository.SaveAsync(ct);
-
-
-        //    return Result.Success();
-        //}
-
+            return order.Id;
+        }
     }
+
 }

@@ -42,8 +42,14 @@ namespace OrderManagement.Domain.ValueObjects
             return this with { Amount = Math.Round(Amount * factor, 2) };
         }
 
+        // Operator overloading
+        public static Money operator +(Money left, Money right) => left.Add(right);
+        public static Money operator -(Money left, Money right) => left.Subtract(right);
+        public static Money operator *(Money money, decimal factor) => money.Multiply(factor);
+
         // Helper constants
-        public static Money Zero(string currency) => new(0, currency);
+        public static Money Zero => new(0, "VND");
+        public static Money ZeroOf(string currency) => new(0, currency);
         public static Money FromVND(decimal amount) => Create(amount, "VND");
         public static Money FromUSD(decimal amount) => Create(amount, "USD");
 

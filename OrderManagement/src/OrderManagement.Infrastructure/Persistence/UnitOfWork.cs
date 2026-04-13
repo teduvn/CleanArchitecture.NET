@@ -20,6 +20,26 @@ namespace OrderManagement.Infrastructure.Persistence
             _dispatcher = dispatcher;
         }
 
+        public Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<int> SaveChangesAsync(CancellationToken ct = default)
         {
             // Lấy tất cả entities có domain event trước khi save

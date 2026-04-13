@@ -14,6 +14,9 @@ namespace OrderManagement.Domain.Entities
         public Money UnitPrice { get; private set; } = null!;
         public int Quantity { get; private set; }
 
+        // Navigation property — EF Core sẽ populate
+        public Product Product { get; private set; } = null!;
+
         // Computed property — Subtotal là kết quả tính từ UnitPrice và Quantity
         // Đây là behaviour của domain, không lưu vào DB
         public Money Subtotal => UnitPrice.Multiply(Quantity);

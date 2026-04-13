@@ -17,6 +17,7 @@ namespace OrderManagement.Domain.Entities
         public string CustomerEmail { get; init; } = string.Empty;
         public OrderStatus Status { get; private set; }
         public Money TotalAmount { get; private set; } = null!;
+        public string Currency { get; private set; } = "VND";
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
 
@@ -41,7 +42,7 @@ namespace OrderManagement.Domain.Entities
                 CustomerId = customerId,
                 ShippingAddress = shippingAddress,
                 Status = OrderStatus.Draft,
-                TotalAmount = Money.Zero("VND"),  // default VND, sẽ recalculate
+                TotalAmount = Money.ZeroOf("VND"),  // default VND, sẽ recalculate
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -140,7 +141,7 @@ namespace OrderManagement.Domain.Entities
         private void RecalculateTotal()
         {
             TotalAmount = _items.Aggregate(
-                Money.Zero("VND"),
+                Money.ZeroOf("VND"),
                 (sum, item) => sum.Add(item.Subtotal));
         }
 
