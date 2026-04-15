@@ -3,9 +3,6 @@ using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Application.Orders.Mappings;
 using OrderManagement.Domain.Repositories;
 using OrderManagement.Domain.Specifications.Orders;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace OrderManagement.Application.Orders.Queries
 {

@@ -1,11 +1,8 @@
 ﻿using MediatR;
-using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Entities;
 using OrderManagement.Domain.Interfaces;
 using OrderManagement.Domain.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using OrderManagement.Domain.ValueObjects;
 
 namespace OrderManagement.Application.Orders.Commands
 {
@@ -26,11 +23,15 @@ namespace OrderManagement.Application.Orders.Commands
             PlaceOrderCommand command,
             CancellationToken cancellationToken)
         {
+            var address = new Address(command.ShippingAddress.Street, command.ShippingAddress.City, command.ShippingAddress.Province, command.ShippingAddress.Country, command.ShippingAddress.PostalCode);
             // 1. Tạo order từ domain logic
-            var order = Order.Create(command.CustomerId, command.ShippingAddress, new List<OrderItem>());
+            var order = Order.Create(command.CustomerId, address, new List<OrderItem>());
 
             foreach (var item in command.Items)
-                order.AddItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity);
+            {
+                var unitPrice = Money.Create(item.UnitPrice, item.Currency);
+                order.AddItem(item.ProductId, item.ProductName, unitPrice, item.Quantity);
+            }    
 
             // 2. Đăng ký vào repository (chưa commit)
             _orderRepository.Add(order);

@@ -36,6 +36,10 @@ namespace OrderManagement.Domain.Entities
             if (shippingAddress is null)
                 throw new DomainException("Địa chỉ giao hàng không được để trống");
 
+            var itemsList = items?.ToList() ?? new List<OrderItem>();
+            if (itemsList.Count == 0)
+                throw new DomainException("Đơn hàng phải có ít nhất một sản phẩm");
+
             var order = new Order
             {
                 Id = Guid.NewGuid(),
@@ -46,7 +50,7 @@ namespace OrderManagement.Domain.Entities
                 CreatedAt = DateTime.UtcNow
             };
 
-            foreach (var item in items)
+            foreach (var item in itemsList)
                 order.AddItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity);
 
             // Raise event — Order tự quyết định khi nào raise

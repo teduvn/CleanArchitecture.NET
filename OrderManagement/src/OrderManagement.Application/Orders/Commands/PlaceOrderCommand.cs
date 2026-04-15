@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Domain.Entities;
 using OrderManagement.Domain.ValueObjects;
 using System;
@@ -10,7 +11,7 @@ namespace OrderManagement.Application.Orders.Commands
     public class PlaceOrderCommand : IRequest<Guid>
     {
         public Guid CustomerId { get; set; }
-        public Address ShippingAddress { get; set; } = null!;
-        public List<OrderItem> Items { get; set; } = new List<OrderItem>();
+        public AddressDto ShippingAddress { get; set; } = null!;
+        public List<OrderItemDto> Items { get; set; } = new List<OrderItemDto>();
     }
 }
