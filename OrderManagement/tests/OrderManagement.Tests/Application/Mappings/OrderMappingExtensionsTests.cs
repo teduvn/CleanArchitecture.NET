@@ -15,8 +15,9 @@ namespace OrderManagement.Tests.Application.Mappings
             // Arrange
             var address = Address.Create("123 Main St", "Hanoi", "Hanoi", "VN", "100000");
             var customerId = Guid.NewGuid();
-            var order = Order.Create(customerId, address, Array.Empty<OrderItem>());
-            
+            var orderResult = Order.CreateDraft(customerId, address);
+            var order = orderResult.Value;
+
             var product = Product.Create("Test Product", "Description", Money.FromVND(100_000), 2.0m, 100);
             order.AddItem(product.Id, product.Name, product.Price, 2);
 
@@ -42,7 +43,8 @@ namespace OrderManagement.Tests.Application.Mappings
         {
             // Arrange
             var address = Address.Create("123 Main St", "Hanoi", "Hanoi", "VN");
-            var order = Order.Create(Guid.NewGuid(), address, Array.Empty<OrderItem>());
+            var orderResult = Order.CreateDraft(Guid.NewGuid(), address);
+            var order = orderResult.Value;
             var product = Product.Create("Test Product", "Description", Money.FromVND(50_000), 1.5m, 100);
             order.AddItem(product.Id, product.Name, product.Price, 3);
 
@@ -102,8 +104,9 @@ namespace OrderManagement.Tests.Application.Mappings
         {
             // Arrange
             var address = Address.Create("123 Main St", "Hanoi", "Hanoi", "VN");
-            var order = Order.Create(Guid.NewGuid(), address, Array.Empty<OrderItem>());
-            
+            var orderResult = Order.CreateDraft(Guid.NewGuid(), address);
+            var order = orderResult.Value;
+
             var product1 = Product.Create("Product 1", "Desc 1", Money.FromVND(100_000), 2.0m, 100);
             var product2 = Product.Create("Product 2", "Desc 2", Money.FromVND(150_000), 3.0m, 100);
             var product3 = Product.Create("Product 3", "Desc 3", Money.FromVND(50_000), 1.0m, 100);
@@ -119,7 +122,7 @@ namespace OrderManagement.Tests.Application.Mappings
             Assert.NotNull(dto);
             Assert.Equal(3, dto.Items.Count);
             Assert.All(dto.Items, item => Assert.NotNull(item));
-            
+
             var expectedTotal = (100_000m * 2) + (150_000m * 1) + (50_000m * 3); // 500,000
             Assert.Equal(expectedTotal, dto.TotalAmount);
         }
@@ -129,15 +132,16 @@ namespace OrderManagement.Tests.Application.Mappings
         {
             // Arrange
             var address = Address.Create("123 Main St", "Hanoi", "Hanoi", "VN");
-            var order = Order.Create(Guid.NewGuid(), address, Array.Empty<OrderItem>());
+            var orderResult = Order.CreateDraft(Guid.NewGuid(), address);
+            var order = orderResult.Value;
 
             // Act
             var dtoBeforePlaced = order.ToDto();
-            
+
             var product = Product.Create("Test", "Desc", Money.FromVND(100_000), 1.0m, 100);
             order.AddItem(product.Id, product.Name, product.Price, 1);
             order.Place();
-            
+
             var dtoAfterPlaced = order.ToDto();
 
             // Assert

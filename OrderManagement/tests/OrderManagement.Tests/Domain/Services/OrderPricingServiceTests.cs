@@ -278,7 +278,8 @@ namespace OrderManagement.Tests.Domain.Services
             var product3 = CreateTestProduct(50_000m, 1.0m);
 
             var address = Address.Create("123 Test St", "Hanoi", "Hanoi", "VN");
-            var order = Order.Create(Guid.NewGuid(), address, Array.Empty<OrderItem>());
+            var orderResult = Order.CreateDraft(Guid.NewGuid(), address);
+            var order = orderResult.Value;
 
             order.AddItem(product1.Id, product1.Name, product1.Price, 2);
             order.AddItem(product2.Id, product2.Name, product2.Price, 1);
@@ -325,7 +326,8 @@ namespace OrderManagement.Tests.Domain.Services
         {
             // Arrange
             var address = Address.Create("123 Test St", "Hanoi", "Hanoi", "VN");
-            var order = Order.Create(Guid.NewGuid(), address, Array.Empty<OrderItem>());
+            var orderResult = Order.CreateDraft(Guid.NewGuid(), address);
+            var order = orderResult.Value;
 
             // Act
             var finalPrice = _service.CalculateFinalPrice(
@@ -404,7 +406,8 @@ namespace OrderManagement.Tests.Domain.Services
         private Order CreateOrderWithProduct(Product product, int quantity)
         {
             var address = Address.Create("123 Test St", "Hanoi", "Hanoi", "VN");
-            var order = Order.Create(Guid.NewGuid(), address, Array.Empty<OrderItem>());
+            var orderResult = Order.CreateDraft(Guid.NewGuid(), address);
+            var order = orderResult.Value;
             order.AddItem(product.Id, product.Name, product.Price, quantity);
 
             // Simulate EF Core navigation property population

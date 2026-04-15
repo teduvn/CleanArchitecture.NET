@@ -5,6 +5,7 @@ using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Entities;
 using OrderManagement.Domain.Interfaces;
+using OrderManagement.Domain.Orders;
 using OrderManagement.Domain.Repositories;
 using System;
 using System.Collections.Generic;
@@ -14,19 +15,76 @@ namespace OrderManagement.Tests.Application.Orders
 {
     public class PlaceOrderCommandHandlerTests
     {
-        private readonly IOrderRepository _repo = Substitute.For<IOrderRepository>();
-        private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
-        private readonly PlaceOrderCommandHandler _handler;
+        private readonly IOrderRepository _orderRepo;
+        private readonly ICustomerRepository _customerRepo;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly PlaceOrderCommandHandler _sut;
 
         public PlaceOrderCommandHandlerTests()
         {
-            _handler = new PlaceOrderCommandHandler(_repo, _uow);
+            // Tạo mock — không cần DI container
+            _orderRepo = Substitute.For<IOrderRepository>();
+            _customerRepo = Substitute.For<ICustomerRepository>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
+
+            _sut = new PlaceOrderCommandHandler(
+                _orderRepo, _customerRepo, _unitOfWork);
         }
 
+        // Test 1: Happy path — order được tạo thành công
         [Fact]
-        public async Task Handle_ValidCommand_CreatesOrderAndReturnsId()
+        public async Task Handle_ValidCommand_ReturnsSuccessWithOrderId()
         {
             // Arrange
+            var customerId = Guid.NewGuid();
+            var customerResult = Customer.Create("John", "Doe", "john.doe@example.com", "123456789");
+            var customer = customerResult.Value;
+            _customerRepo.GetByIdAsync(customerId, default)
+                .Returns(customer);
+
+            var command = new PlaceOrderCommand
+            {
+                CustomerId = customerId,
+                ShippingAddress = new AddressDto
+                {
+                    Street = "123 Main St",
+                    City = "Hanoi",
+                    Province = "Hanoi",
+                    Country = "Vietnam",
+                    PostalCode = "100000"
+                },
+                Items = new List<OrderItemDto>
+                {
+                    new OrderItemDto
+                    {
+                        ProductId = Guid.NewGuid(),
+                        ProductName = "Product A",
+                        UnitPrice = 15.00m,
+                        Currency = "VND",
+                        Quantity = 2
+                    }
+                }
+            };
+
+            // Act
+            var result = await _sut.Handle(command, default);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeEmpty();
+            // Verify repo được gọi đúng 1 lần
+            _orderRepo.Received(1).Add(Arg.Any<Order>());
+            await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        // Test 2: Business error — customer không tồn tại
+        [Fact]
+        public async Task Handle_CustomerNotFound_ReturnsFailure()
+        {
+            // Arrange — mock trả về null
+            _customerRepo.GetByIdAsync(Arg.Any<Guid>(), default)
+                .Returns((Customer?)null);
+
             var command = new PlaceOrderCommand
             {
                 CustomerId = Guid.NewGuid(),
@@ -43,48 +101,56 @@ namespace OrderManagement.Tests.Application.Orders
                     new OrderItemDto
                     {
                         ProductId = Guid.NewGuid(),
-                        ProductName = "Test Product",
-                        UnitPrice = 150_000m,
+                        ProductName = "Product A",
+                        UnitPrice = 20.00m,
                         Currency = "VND",
-                        Quantity = 2
+                        Quantity = 1
                     }
                 }
             };
 
             // Act
-            var orderId = await _handler.Handle(command, CancellationToken.None);
+            var result = await _sut.Handle(command, default);
 
-            // Assert
-            orderId.Should().NotBeEmpty();
-            // Verify repository được gọi đúng 1 lần
-            _repo.Received(1).Add(Arg.Any<Order>());
-            await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+            // Assert — KHÔNG có try/catch, assert trực tiếp
+            result.IsFailure.Should().BeTrue();
+            result.Error.Code.Should().StartWith("Order.CustomerNotFound");
+
+            // Verify repo KHÔNG được gọi
+            _orderRepo.DidNotReceive().Add(Arg.Any<Order>());
         }
 
+        // Test 3: Business error — order rỗng
         [Fact]
-        public async Task Handle_EmptyItems_ThrowsDomainException()
+        public async Task Handle_EmptyItems_ReturnsOrderEmptyItemsError()
         {
             // Arrange
+            var customerId = Guid.NewGuid();
+            var customerResult = Customer.Create("Jane", "Smith", "jane.smith@example.com", "987654321");
+            var customer = customerResult.Value;
+            _customerRepo.GetByIdAsync(customerId, default)
+                .Returns(customer);
+
             var command = new PlaceOrderCommand
             {
-                CustomerId = Guid.NewGuid(),
+                CustomerId = customerId,
                 ShippingAddress = new AddressDto
                 {
-                    Street = "123 Main St",
+                    Street = "456 Oak Ave",
                     City = "Hanoi",
                     Province = "Hanoi",
                     Country = "Vietnam",
                     PostalCode = "100000"
                 },
-                Items = new List<OrderItemDto>() // Empty!
+                Items = new List<OrderItemDto>() // Không có item
             };
 
             // Act
-            var act = async () => await _handler.Handle(command, CancellationToken.None);
+            var result = await _sut.Handle(command, default);
 
-            // Assert — DomainException được throw từ Order.Create()
-            await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("*ít nhất một sản phẩm*");
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Should().Be(OrderErrors.EmptyItems);
         }
 
     }

@@ -1,5 +1,6 @@
 ﻿using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Events;
+using OrderManagement.Domain.Orders;
 using OrderManagement.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -27,19 +28,40 @@ namespace OrderManagement.Domain.Entities
         // EF Core cần constructor không tham số (private để không expose)
         private Order() { }
 
-        // Factory method thay vì constructor public — kiểm soát invariant
-        public static Order Create(Guid customerId, Address shippingAddress, IEnumerable<OrderItem> items)
+        // Factory method for creating draft order without items
+        public static Result<Order> CreateDraft(Guid customerId, Address shippingAddress)
         {
             ArgumentException.ThrowIfNullOrEmpty(customerId.ToString());
             if (customerId == Guid.Empty)
-                throw new DomainException("CustomerId không hợp lệ");
+                return OrderErrors.CustomerNotFound(customerId);
             if (shippingAddress is null)
-                throw new DomainException("Địa chỉ giao hàng không được để trống");
+                return OrderErrors.ShippingAddressNotFound(shippingAddress);
+
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                CustomerId = customerId,
+                ShippingAddress = shippingAddress,
+                Status = OrderStatus.Draft,
+                TotalAmount = Money.ZeroOf("VND"),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            return order;
+        }
+
+        // Factory method thay vì constructor public — kiểm soát invariant
+        public static Result<Order> Create(Guid customerId, Address shippingAddress, IEnumerable<OrderItem> items)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(customerId.ToString());
+            if (customerId == Guid.Empty)
+                return OrderErrors.CustomerNotFound(customerId);
+            if (shippingAddress is null)
+                return OrderErrors.ShippingAddressNotFound(shippingAddress);
 
             var itemsList = items?.ToList() ?? new List<OrderItem>();
             if (itemsList.Count == 0)
-                throw new DomainException("Đơn hàng phải có ít nhất một sản phẩm");
-
+                return OrderErrors.EmptyItems;
             var order = new Order
             {
                 Id = Guid.NewGuid(),

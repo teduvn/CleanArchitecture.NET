@@ -12,10 +12,10 @@ namespace OrderManagement.Tests.Unit.Domain
         public void AddItem_ValidProduct_ShouldIncreaseTotalAmount()
         {
             // Arrange
-            var order = Order.Create(
+            var orderResult = Order.CreateDraft(
                 Guid.NewGuid(),
-                new Address("123 Main St", "Hanoi", "Vietnam", "100000"),
-                new List<OrderItem>());
+                new Address("123 Main St", "Hanoi", "Hanoi", "VN", "100000"));
+            var order = orderResult.Value;
             var price = Money.Create(100_000, "VND");
 
             // Act
@@ -31,10 +31,10 @@ namespace OrderManagement.Tests.Unit.Domain
         public void AddItem_WithNegativeQuantity_ShouldThrowDomainException()
         {
             // Arrange
-            var order = Order.Create(
+            var orderResult = Order.CreateDraft(
                 Guid.NewGuid(),
-                new Address("123 Main St", "Hanoi", "Vietnam", "100000"),
-                new List<OrderItem>());
+                new Address("123 Main St", "Hanoi", "Hanoi", "VN", "100000"));
+            var order = orderResult.Value;
 
             // Act
             var act = () => order.AddItem(Guid.NewGuid(), "Laptop", Money.Create(100_000, "VND"), -1);
@@ -49,10 +49,10 @@ namespace OrderManagement.Tests.Unit.Domain
         public void Place_WithNoItems_ShouldThrowDomainException()
         {
             // Arrange
-            var order = Order.Create(
+            var orderResult = Order.CreateDraft(
                 Guid.NewGuid(),
-                new Address("123 Main St", "Hanoi", "Vietnam", "100000"),
-                new List<OrderItem>());
+                new Address("123 Main St", "Hanoi", "Hanoi", "VN", "100000"));
+            var order = orderResult.Value;
 
             // Act
             var act = () => order.Place();
@@ -67,20 +67,24 @@ namespace OrderManagement.Tests.Unit.Domain
         {
             // Arrange
             var customerId = Guid.NewGuid();
-            var shippingAddress = new Address("123 Main St", "Hanoi", "Vietnam", "100000");
+            var shippingAddress = new Address("123 Main St", "Hanoi", "Hanoi", "VN", "100000");
             var productId = Guid.NewGuid();
 
-            // Act
-            var order = Order.Create(customerId, shippingAddress, new List<OrderItem>());
-            order.AddItem(productId, "Product A", Money.Create(100_000, "VND"), 2);
+            // Act - Create order with items to raise event
+            var items = new List<OrderItem>
+            {
+                OrderItem.Create(Guid.NewGuid(), productId, "Product A", Money.Create(100_000, "VND"), 2)
+            };
+            var orderResult = Order.Create(customerId, shippingAddress, items);
+            var order = orderResult.Value;
 
             // Assert — không cần database, không cần DI
             var domainEvent = order.DomainEvents.Should().ContainSingle()
                 .Which.Should().BeOfType<OrderPlacedEvent>().Subject;
 
             domainEvent.CustomerId.Should().Be(customerId);
-            domainEvent.TotalAmount.Should().Be(0); // Event raised on Create, before items added
-            domainEvent.Items.Should().BeEmpty();
+            domainEvent.TotalAmount.Should().Be(200_000); // 100k * 2
+            domainEvent.Items.Should().ContainSingle();
         }
 
         [Fact]
@@ -88,8 +92,9 @@ namespace OrderManagement.Tests.Unit.Domain
         {
             // Arrange — Order mới tạo có status Draft
             var customerId = Guid.NewGuid();
-            var shippingAddress = new Address("123 Main St", "Hanoi", "Vietnam", "100000");
-            var order = Order.Create(customerId, shippingAddress, new List<OrderItem>());
+            var shippingAddress = new Address("123 Main St", "Hanoi", "Hanoi", "VN", "100000");
+            var orderResult = Order.CreateDraft(customerId, shippingAddress);
+            var order = orderResult.Value;
             order.AddItem(Guid.NewGuid(), "Product A", Money.Create(100_000, "VND"), 1);
 
             // Act
