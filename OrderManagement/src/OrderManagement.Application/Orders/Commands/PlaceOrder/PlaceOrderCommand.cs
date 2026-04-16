@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using OrderManagement.Application.Common.Interfaces;
 using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Entities;
@@ -9,7 +10,7 @@ using System.Text;
 
 namespace OrderManagement.Application.Orders.Commands.PlaceOrder
 {
-    public class PlaceOrderCommand : IRequest<Result<Guid>>
+    public class PlaceOrderCommand : IRequest<Result<Guid>>, ITransactionalCommand
     {
         public Guid CustomerId { get; set; }
         public AddressDto ShippingAddress { get; set; } = null!;

@@ -18,8 +18,19 @@ namespace OrderManagement.Application
             {
                 cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
                 // Đăng ký behavior vào pipeline
+
+                // Thứ tự đăng ký = thứ tự thực thi (ngoài vào trong)
+                // Logging phải là ngoài cùng để bao phủ toàn bộ pipeline
+                cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+
+
                 // Thứ tự quan trọng: Behavior đăng ký trước chạy trước
-                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+                cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+
+                // Transaction bao quanh handler — chỉ áp dụng cho ITransactionalCommand
+                cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
+
+
             });
 
             // Đăng ký tất cả validator trong assembly này
