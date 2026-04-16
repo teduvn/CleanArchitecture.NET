@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
 using NSubstitute;
-using OrderManagement.Application.Orders.Commands;
+using OrderManagement.Application.Orders.Commands.PlaceOrder;
 using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Entities;

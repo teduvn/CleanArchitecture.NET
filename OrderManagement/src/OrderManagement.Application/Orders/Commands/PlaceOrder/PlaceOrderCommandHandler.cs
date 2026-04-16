@@ -8,7 +8,7 @@ using OrderManagement.Domain.Orders;
 using OrderManagement.Domain.Repositories;
 using OrderManagement.Domain.ValueObjects;
 
-namespace OrderManagement.Application.Orders.Commands
+namespace OrderManagement.Application.Orders.Commands.PlaceOrder
 {
     public class PlaceOrderCommandHandler : IRequestHandler<PlaceOrderCommand, Result<Guid>>
     {

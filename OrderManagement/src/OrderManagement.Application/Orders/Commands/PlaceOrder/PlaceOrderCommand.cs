@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace OrderManagement.Application.Orders.Commands
+namespace OrderManagement.Application.Orders.Commands.PlaceOrder
 {
     public class PlaceOrderCommand : IRequest<Result<Guid>>
     {
