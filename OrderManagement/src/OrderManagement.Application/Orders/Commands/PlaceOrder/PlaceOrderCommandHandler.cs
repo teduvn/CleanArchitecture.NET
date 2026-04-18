@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using OrderManagement.Application.Common;
+using OrderManagement.Application.Common.Interfaces;
 using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Entities;
@@ -15,15 +16,22 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
         private readonly IOrderRepository _orderRepository;
         private readonly ICustomerRepository _customerRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IEmailService _emailService;      // interface, không phải SendGrid
+        private readonly IPaymentGateway _paymentGateway;  // interface, không phải Stripe
 
         public PlaceOrderCommandHandler(
             IOrderRepository orderRepository,
             ICustomerRepository customerRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IEmailService emailService,
+            IPaymentGateway paymentGateway
+        )
         {
             _orderRepository = orderRepository;
             _customerRepository = customerRepository;
             _unitOfWork = unitOfWork;
+            _emailService = emailService;
+            _paymentGateway = paymentGateway;
         }
 
         public async Task<Result<Guid>> Handle(
@@ -37,6 +45,7 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
             var customer = await _customerRepository
                 .GetByIdAsync(command.CustomerId, cancellationToken);
 
+
             if (customer is null)
                 return OrderErrors.CustomerNotFound(command.CustomerId);
             // implicit conversion: Error → Result<Guid>
@@ -47,6 +56,15 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
             // Step 2: Delegate sang Domain để tạo Aggregate
             // Domain sẽ enforce invariant, throw DomainException nếu vi phạm
             var orderResult = Order.CreateDraft(command.CustomerId, address);
+
+            // 2. Charge qua Payment Gateway
+            var paymentResult = await _paymentGateway.ChargeAsync(
+                new PaymentRequest(orderResult.Value.Id, orderResult.Value.TotalAmount.Amount, "VND",
+                                   string.Empty), cancellationToken);
+
+            if (!paymentResult.IsSuccess)
+                return Result<Guid>.Failure(Error.Create("CARD_DECLINED", "Payment failed"));
+
 
             if (orderResult.IsFailure)
                 return orderResult.Error;
@@ -62,6 +80,12 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
             // Step 3: Persist
             _orderRepository.Add(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // 4. Gửi email xác nhận
+            await _emailService.SendOrderConfirmationAsync(
+                customer.Email,customer.GetFullName(),
+                order.Id, order.TotalAmount.Amount, cancellationToken);
+
 
             // Step 4: Return success với data
             return Result<Guid>.Success(order.Id);

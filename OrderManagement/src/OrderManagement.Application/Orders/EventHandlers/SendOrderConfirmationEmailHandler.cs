@@ -31,10 +31,10 @@ namespace OrderManagement.Application.Orders.EventHandlers
                 @event.CustomerEmail);
 
             await _emailService.SendOrderConfirmationAsync(
-                to: @event.CustomerEmail,
+                toEmail: @event.CustomerEmail,
+                customerName: @event.CustomerName,
                 orderId: @event.OrderId,
                 totalAmount: @event.TotalAmount,
-                items: @event.Items,
                 cancellationToken: cancellationToken);
         }
     }

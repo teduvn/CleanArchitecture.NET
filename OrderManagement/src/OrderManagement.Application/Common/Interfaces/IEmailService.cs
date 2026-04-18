@@ -7,11 +7,20 @@ namespace OrderManagement.Application.Common.Interfaces
 {
     public interface IEmailService
     {
+        // Tên method = hành động nghiệp vụ cụ thể
         Task SendOrderConfirmationAsync(
-            string to,
+            string toEmail,
+            string customerName,
             Guid orderId,
             decimal totalAmount,
-            IReadOnlyList<OrderItemSnapshot> items,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken = default);
+
+        Task SendShippingNotificationAsync(
+            string toEmail,
+            string customerName,
+            Guid orderId,
+            string trackingNumber,
+            CancellationToken cancellationToken = default);
+
     }
 }

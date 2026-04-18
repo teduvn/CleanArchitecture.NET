@@ -13,6 +13,8 @@ namespace OrderManagement.Domain.Events
         // Data cần thiết cho handler
         public Guid OrderId { get; init; }
         public Guid CustomerId { get; init; }
+
+        public string CustomerName { get; init; } = string.Empty;
         public decimal TotalAmount { get; init; }
         public string CustomerEmail { get; init; } = string.Empty;
         public IReadOnlyList<OrderItemSnapshot> Items { get; init; } = [];
