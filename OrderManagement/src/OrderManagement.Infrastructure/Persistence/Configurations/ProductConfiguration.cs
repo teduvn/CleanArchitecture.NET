@@ -57,8 +57,11 @@ namespace OrderManagement.Infrastructure.Persistence.Configurations
             });
 
             // 5. Concurrency token
+            // SQLite không hỗ trợ rowversion như SQL Server, nên dùng DefaultValue
             builder.Property<uint>("RowVersion")
-                   .IsRowVersion();
+                   .IsRowVersion()
+                   .HasDefaultValue(0u)
+                   .ValueGeneratedOnAddOrUpdate();
         }
     }
 }

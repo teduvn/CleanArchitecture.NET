@@ -25,6 +25,8 @@ namespace OrderManagement.Domain.Entities
         // Read-only collection — caller không thể modify list trực tiếp
         public IReadOnlyList<OrderItem> Items => _items.AsReadOnly();
 
+        public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
+
         // EF Core cần constructor không tham số (private để không expose)
         private Order() { }
 
@@ -161,6 +163,17 @@ namespace OrderManagement.Domain.Entities
                 TrackingNumber = trackingNumber,
                 EstimatedDelivery = estimatedDelivery
             });
+        }
+
+        public void UpdateShippingAddress(Address newAddress)
+        {
+            EnsureOrderIsModifiable();
+
+            if (newAddress is null)
+                throw new DomainException("Địa chỉ giao hàng không được null.");
+
+            ShippingAddress = newAddress;
+            UpdatedAt = DateTime.UtcNow;
         }
 
 

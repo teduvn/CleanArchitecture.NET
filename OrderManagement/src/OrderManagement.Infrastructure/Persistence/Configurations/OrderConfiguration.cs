@@ -83,8 +83,13 @@ namespace OrderManagement.Infrastructure.Persistence.Configurations
                    .OnDelete(DeleteBehavior.Cascade);
 
             // 7. Concurrency token (optional — dùng cho optimistic concurrency)
-            builder.Property<uint>("RowVersion")
-                   .IsRowVersion();
+            // Đánh dấu RowVersion là concurrency token
+            // EF Core sẽ tự thêm WHERE RowVersion = @original vào mọi UPDATE/DELETE
+            // SQLite không hỗ trợ rowversion như SQL Server, nên dùng DefaultValue
+            builder.Property(o => o.RowVersion)
+                .IsRowVersion()    // tương đương IsTimestamp() + IsConcurrencyToken()
+                .HasDefaultValue(new byte[] { 0 })
+                .ValueGeneratedOnAddOrUpdate();  // SQLite cần config này để generate RowVersion
         }
     }
 
