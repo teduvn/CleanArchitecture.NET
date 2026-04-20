@@ -10,6 +10,8 @@ namespace OrderManagement.Application.Common.Interfaces
     {
         DbSet<Order> Orders { get; }
         DbSet<Product> Products { get; }
+        DbSet<Customer> Customers { get; }
+        DbSet<Voucher> Vouchers { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 

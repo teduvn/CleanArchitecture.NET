@@ -1,10 +1,13 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OrderManagement.Application.Common.Interfaces;
+using OrderManagement.Domain.Interfaces;
 using OrderManagement.Infrastructure.Email;
 using OrderManagement.Infrastructure.FileStorage;
 using OrderManagement.Infrastructure.Payment;
+using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Infrastructure
 {
@@ -14,6 +17,27 @@ namespace OrderManagement.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+
+            // Đăng ký DbContext
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    sqlOptions =>
+                    {
+                        sqlOptions.MigrationsAssembly(
+                            typeof(ApplicationDbContext).Assembly.FullName);
+                        sqlOptions.EnableRetryOnFailure(   // built-in retry cho transient error
+                            maxRetryCount: 3,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorNumbersToAdd: null);
+                    }));
+
+            // Map interface IUnitOfWork sang ApplicationDbContext
+            // Scoped để share instance trong cùng 1 request
+            services.AddScoped<IUnitOfWork>(
+                sp => sp.GetRequiredService<ApplicationDbContext>());
+
+
             // Đăng ký implementation cho interface từ Application
             services.AddScoped<IEmailService, SendGridEmailService>();
             services.AddScoped<IPaymentGateway, StripePaymentGateway>();
