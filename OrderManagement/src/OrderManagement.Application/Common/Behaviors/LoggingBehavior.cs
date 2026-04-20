@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
+using OrderManagement.Application.Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,11 +14,14 @@ namespace OrderManagement.Application.Common.Behaviors
         where TRequest : IRequest<TResponse>
     {
         private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
+        private readonly ICorrelationIdService _correlationIdService;
 
         public LoggingBehavior(
-            ILogger<LoggingBehavior<TRequest, TResponse>> logger)
+            ILogger<LoggingBehavior<TRequest, TResponse>> logger,
+            ICorrelationIdService correlationIdService)
         {
             _logger = logger;
+            _correlationIdService = correlationIdService;
         }
 
         public async Task<TResponse> Handle(
@@ -26,11 +30,14 @@ namespace OrderManagement.Application.Common.Behaviors
             CancellationToken cancellationToken)
         {
             var requestName = typeof(TRequest).Name;
+            var correlationId = _correlationIdService.CorrelationId;
 
-            // Trước khi handler chạy: log tên request
+
+            // Log khi bắt đầu — dùng structured property, không dùng string interpolation
             _logger.LogInformation(
-                "[MediatR] Handling {RequestName}: {@Request}",
-                requestName, request);
+                "Handling {RequestName} | CorrelationId: {CorrelationId} | Data: {@Request}",
+                requestName, correlationId, request);
+
 
             var stopwatch = Stopwatch.StartNew();
 
@@ -41,20 +48,25 @@ namespace OrderManagement.Application.Common.Behaviors
 
                 stopwatch.Stop();
 
-                // Sau khi handler chạy xong: log kết quả + thời gian
+                // Log khi thành công
                 _logger.LogInformation(
-                    "[MediatR] {RequestName} handled in {ElapsedMs}ms",
-                    requestName, stopwatch.ElapsedMilliseconds);
+                    "Handled {RequestName} successfully | CorrelationId: {CorrelationId} | Elapsed: {Elapsed}ms",
+                    requestName, correlationId, stopwatch.ElapsedMilliseconds);
+
 
                 return response;
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
+                // Log khi thất bại — WARNING cho business error, ERROR cho exception
                 _logger.LogError(ex,
-                    "[MediatR] {RequestName} failed after {ElapsedMs}ms",
-                    requestName, stopwatch.ElapsedMilliseconds);
-                throw; // Không nuốt exception — chỉ log rồi rethrow
+                    "Handling {RequestName} failed | CorrelationId: {CorrelationId} | Elapsed: {Elapsed}ms",
+                    requestName, correlationId, stopwatch.ElapsedMilliseconds);
+
+
+                throw; // Re-throw để Error Handling Middleware xử lý
+
             }
         }
     }

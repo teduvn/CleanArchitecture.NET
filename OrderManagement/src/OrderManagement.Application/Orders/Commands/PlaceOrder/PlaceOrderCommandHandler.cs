@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using OrderManagement.Application.Common;
 using OrderManagement.Application.Common.Interfaces;
 using OrderManagement.Application.Contracts;
@@ -20,6 +21,7 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
         private readonly IEmailService _emailService;      // interface, không phải SendGrid
         private readonly IPaymentGateway _paymentGateway;  // interface, không phải Stripe
         private readonly ICurrentUserService _currentUserService;
+
         public PlaceOrderCommandHandler(
             IOrderRepository orderRepository,
             ICustomerRepository customerRepository,
@@ -41,6 +43,7 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
             PlaceOrderCommand command,
             CancellationToken cancellationToken)
         {
+
             // Lấy userId — không cần biết JWT hay HttpContext
             var userId = _currentUserService.UserId;
             if (userId == null)

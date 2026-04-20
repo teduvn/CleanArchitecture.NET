@@ -23,6 +23,7 @@ namespace OrderManagement.Application
                 // Logging phải là ngoài cùng để bao phủ toàn bộ pipeline
                 cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
 
+                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
 
                 // Thứ tự quan trọng: Behavior đăng ký trước chạy trước
                 cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
