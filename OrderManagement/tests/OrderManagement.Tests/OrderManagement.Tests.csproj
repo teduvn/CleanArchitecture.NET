@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="FluentAssertions" Version="8.9.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.6" />
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.6" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
@@ -22,6 +23,7 @@
     <ProjectReference Include="..\..\src\OrderManagement.Application\OrderManagement.Application.csproj" />
     <ProjectReference Include="..\..\src\OrderManagement.Domain\OrderManagement.Domain.csproj" />
     <ProjectReference Include="..\..\src\OrderManagement.Infrastructure\OrderManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\OrderManagement.WebAPI\OrderManagement.WebAPI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

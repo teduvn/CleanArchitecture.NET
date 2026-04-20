@@ -5,7 +5,7 @@ using OrderManagement.Domain.ValueObjects;
 using System;
 using Xunit;
 
-namespace OrderManagement.Tests.Domain.Services
+namespace OrderManagement.Tests.Unit.Domain.Services
 {
     public class OrderPricingServiceTests
     {

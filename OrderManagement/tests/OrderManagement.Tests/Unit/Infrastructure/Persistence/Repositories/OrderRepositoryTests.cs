@@ -8,7 +8,7 @@ using OrderManagement.Domain.ValueObjects;
 using OrderManagement.Infrastructure.Persistence;
 using OrderManagement.Infrastructure.Persistence.Repositories;
 
-namespace OrderManagement.Tests.Infrastructure.Persistence.Repositories
+namespace OrderManagement.Tests.Unit.Infrastructure.Persistence.Repositories
 {
     public class OrderRepositoryTests : IAsyncLifetime
     {

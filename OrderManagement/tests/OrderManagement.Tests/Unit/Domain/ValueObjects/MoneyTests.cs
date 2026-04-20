@@ -2,7 +2,7 @@
 using OrderManagement.Domain.Common;
 using OrderManagement.Domain.ValueObjects;
 
-namespace OrderManagement.Tests.Unit.Domain
+namespace OrderManagement.Tests.Unit.Domain.ValueObjects
 {
     public class MoneyTests
     {

@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using Xunit;
 
-namespace OrderManagement.Tests.Application.Mappings
+namespace OrderManagement.Tests.Unit.Application.Mappings
 {
     public class OrderMappingExtensionsTests
     {

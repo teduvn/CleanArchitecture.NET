@@ -1,5 +1,4 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,7 +13,9 @@ using OrderManagement.Infrastructure.Persistence;
 using OrderManagement.Infrastructure.Persistence.Repositories;
 using OrderManagement.Infrastructure.Persistence.Seeding;
 using OrderManagement.Infrastructure.Resilience;
+using OrderManagement.Infrastructure.Services;
 using Polly;
+using SendGrid;
 using StackExchange.Redis;
 using Stripe;
 
@@ -59,6 +60,13 @@ namespace OrderManagement.Infrastructure
             services.AddScoped<IUnitOfWork>(
                 sp => sp.GetRequiredService<ApplicationDbContext>());
 
+            // Map IApplicationDbContext to ApplicationDbContext
+            services.AddScoped<IApplicationDbContext>(
+                sp => sp.GetRequiredService<ApplicationDbContext>());
+
+            // Register IDbConnectionFactory
+            services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
+
             // Đăng ký seeders
             services.AddScoped<IDataSeeder, RoleSeedDataSeeder>();
 
@@ -78,6 +86,7 @@ namespace OrderManagement.Infrastructure
             this IServiceCollection services)
         {
             services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<ICustomerRepository, CustomerRepository>();
             return services;
         }
 
@@ -90,13 +99,22 @@ namespace OrderManagement.Infrastructure
             services.Configure<SendGridSettings>(configuration.GetSection(SendGridSettings.SectionName));
             services.Configure<StripeSettings>(configuration.GetSection(StripeSettings.SectionName));
 
+            // Register SendGrid client
+            services.AddTransient<ISendGridClient>(sp =>
+            {
+                var apiKey = configuration["SendGrid:ApiKey"];
+                return new SendGridClient(apiKey);
+            });
+
             StripeConfiguration.ApiKey = configuration["Stripe:SecretKey"];
             services.AddTransient<PaymentIntentService>();
+            services.AddTransient<RefundService>();
 
             // Đăng ký service implementations
             services.AddTransient<IEmailService, SendGridEmailService>();
             services.AddTransient<IPaymentGateway, StripePaymentGateway>();
             services.AddTransient<IFileStorage, AzureBlobFileStorage>();
+            services.AddTransient<IInventoryService, InventoryService>();
 
             // HttpClient với Polly policy cho external HTTP calls
             // Policy = Retry bên trong CircuitBreaker (thứ tự quan trọng)

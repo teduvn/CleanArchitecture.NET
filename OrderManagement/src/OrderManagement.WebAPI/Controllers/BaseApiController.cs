@@ -9,7 +9,6 @@ namespace OrderManagement.WebAPI.Controllers
     /// Inject ISender một lần — các controller con không cần khai báo lại.
     /// </summary>
     [ApiController]
-    [Produces("application/json")]
     public abstract class BaseApiController(ISender sender) : ControllerBase
     {
         protected readonly ISender Sender = sender;

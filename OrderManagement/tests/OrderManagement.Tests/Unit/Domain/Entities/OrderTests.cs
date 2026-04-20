@@ -4,7 +4,7 @@ using OrderManagement.Domain.Entities;
 using OrderManagement.Domain.Events;
 using OrderManagement.Domain.ValueObjects;
 
-namespace OrderManagement.Tests.Unit.Domain
+namespace OrderManagement.Tests.Unit.Domain.Entities
 {
     public class OrderTests
     {

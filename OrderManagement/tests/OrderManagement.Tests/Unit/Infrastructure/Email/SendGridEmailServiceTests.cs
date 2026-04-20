@@ -9,7 +9,7 @@ using SendGrid;
 using SendGrid.Helpers.Mail;
 using System.Net;
 
-namespace OrderManagement.Tests.Infrastructure.Email
+namespace OrderManagement.Tests.Unit.Infrastructure.Email
 {
     public class SendGridEmailServiceTests
     {

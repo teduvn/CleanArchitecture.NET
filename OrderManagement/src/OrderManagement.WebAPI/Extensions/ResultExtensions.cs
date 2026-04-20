@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using OrderManagement.Domain.Common;
 
 namespace OrderManagement.WebAPI.Extensions
@@ -18,38 +19,53 @@ namespace OrderManagement.WebAPI.Extensions
             return result.Error.Code switch
             {
                 // Business rule violation → 400 Bad Request
-                "Error.BusinessRule" => new BadRequestObjectResult(
-                    new ProblemDetails
-                    {
-                        Title = "Business Rule Violation",
-                        Detail = result.Error.Description,
-                        Status = StatusCodes.Status400BadRequest
-                    }),
+                "Error.BusinessRule" => CreateProblemDetailsResult(
+                    StatusCodes.Status400BadRequest,
+                    "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
+                    "Business Rule Violation",
+                    result.Error.Description),
 
 
                 // Entity không tồn tại → 404 Not Found
-                "Error.NotFound" => new NotFoundObjectResult(
-                    new ProblemDetails
-                    {
-                        Title = "Resource Not Found",
-                        Detail = result.Error.Description,
-                        Status = StatusCodes.Status404NotFound
-                    }),
+                // Match both "Error.NotFound" and "Entity.NotFound" patterns
+                var code when code.EndsWith(".NotFound") => CreateProblemDetailsResult(
+                    StatusCodes.Status404NotFound,
+                    "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.4",
+                    "Resource Not Found",
+                    result.Error.Description),
 
 
                 // Validation thất bại → 422 Unprocessable Entity
-                "Error.Validation" => new UnprocessableEntityObjectResult(
-                    new ProblemDetails
-                    {
-                        Title = "Validation Failed",
-                        Detail = result.Error.Description,
-                        Status = StatusCodes.Status422UnprocessableEntity
-                    }),
+                "Error.Validation" => CreateProblemDetailsResult(
+                    StatusCodes.Status422UnprocessableEntity,
+                    "https://datatracker.ietf.org/doc/html/rfc4918#section-11.2",
+                    "Validation Failed",
+                    result.Error.Description),
 
 
                 // Fallback
-                _ => new BadRequestObjectResult(
-                    new ProblemDetails { Detail = result.Error.Description })
+                _ => CreateProblemDetailsResult(
+                    StatusCodes.Status400BadRequest,
+                    "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
+                    "Bad Request",
+                    result.Error.Description)
+            };
+        }
+
+        private static IActionResult CreateProblemDetailsResult(int statusCode, string type, string title, string detail)
+        {
+            var problemDetails = new ProblemDetails
+            {
+                Type = type,
+                Title = title,
+                Detail = detail,
+                Status = statusCode
+            };
+
+            return new ObjectResult(problemDetails)
+            {
+                StatusCode = statusCode,
+                ContentTypes = new Microsoft.AspNetCore.Mvc.Formatters.MediaTypeCollection { "application/problem+json" }
             };
         }
     }

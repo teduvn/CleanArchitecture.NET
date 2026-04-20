@@ -10,7 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace OrderManagement.Tests.Application.Common.Behaviors
+namespace OrderManagement.Tests.Unit.Application.Common.Behaviors
 {
     public class ValidationBehaviorTests
     {

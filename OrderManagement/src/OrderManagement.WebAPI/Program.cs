@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using OrderManagement.Application;
 using OrderManagement.Domain;
 using OrderManagement.Infrastructure;
 using OrderManagement.WebAPI.Extensions;
+using OrderManagement.WebAPI.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,14 +15,23 @@ builder.Services
     .AddInfrastructureServices(builder.Configuration, builder.Environment); // DB, Cache, External
 
 // ── Presentation-specific ────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Configure JSON options if needed
+    });
+
+// Configure Problem Details
+builder.Services.AddProblemDetails();
+
+// Configure API behavior options to properly format Problem Details
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = false;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
-
-// Authentication & Authorization
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => { /* ... */ });
 
 // ICurrentUserService — Presentation-specific implementation
 // Interface định nghĩa ở Application, implementation ở WebApi
@@ -36,9 +47,63 @@ builder.Host.UseDefaultServiceProvider((context, options) =>
         context.HostingEnvironment.IsDevelopment();
 });
 
+// Authentication & Authorization
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        // ...
+
+        options.Events = new JwtBearerEvents
+        {
+            // Không có token hoặc token hết hạn
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();  // Ngăn response mặc định
+
+                context.Response.StatusCode = 401;
+                context.Response.ContentType = "application/problem+json";
+
+                var pd = new ProblemDetails
+                {
+                    Type = "https://tools.ietf.org/html/rfc7235#section-3.1",
+                    Title = "Unauthorized",
+                    Status = 401,
+                    Detail = "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.",
+                    Instance = context.Request.Path
+                };
+
+                await context.Response.WriteAsJsonAsync(pd);
+            },
+
+            // Token hợp lệ nhưng không đủ quyền
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = 403;
+                context.Response.ContentType = "application/problem+json";
+
+                var pd = new ProblemDetails
+                {
+                    Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+                    Title = "Forbidden",
+                    Status = 403,
+                    Detail = "Bạn không có quyền truy cập resource này.",
+                    Instance = context.Request.Path
+                };
+
+                await context.Response.WriteAsJsonAsync(pd);
+            }
+        };
+    });
+
+
 
 // ── Build & Middleware Pipeline ───────────────────────────────────────
 var app = builder.Build();
+
+// CRITICAL: ExceptionMiddleware PHẢI là middleware đầu tiên trong pipeline
+// Nếu đặt sau, các middleware trước nó có thể throw exception mà không bị catch
+app.UseGlobalExceptionHandling();
+
 
 if (app.Environment.IsDevelopment())
 {

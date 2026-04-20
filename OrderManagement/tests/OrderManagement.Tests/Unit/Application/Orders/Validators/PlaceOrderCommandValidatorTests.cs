@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace OrderManagement.Tests.Application.Orders.Validators
+namespace OrderManagement.Tests.Unit.Application.Orders.Validators
 {
     public class PlaceOrderCommandValidatorTests
     {
