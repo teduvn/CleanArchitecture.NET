@@ -1,23 +1,16 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using OrderManagement.Application.Orders.Commands;
 using OrderManagement.Application.Orders.Commands.PlaceOrder;
 using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Application.Orders.Queries;
+using OrderManagement.WebAPI.Extensions;
 
 namespace OrderManagement.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class OrdersController : ControllerBase
+    public class OrdersController(ISender sender) : BaseApiController(sender)
     {
-        private readonly IMediator _mediator;
-
-        public OrdersController(IMediator mediator)
-        {
-            _mediator = mediator;
-        }
-
         // POST /api/orders
         [HttpPost]
         public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequest request)
@@ -41,8 +34,12 @@ namespace OrderManagement.WebAPI.Controllers
                                                         }).ToList()
                                                 };
 
-            var orderId = await _mediator.Send(command);
-            return CreatedAtAction(nameof(GetOrder), new { id = orderId }, new { orderId });
+            var result = await sender.Send(command);
+
+            if (result.IsFailure)
+                return result.ToProblemDetails();
+
+            return CreatedAtAction(nameof(GetOrder), new { id = result.Value }, new { orderId = result.Value });
         }
 
         // GET /api/orders/{id}
@@ -50,9 +47,12 @@ namespace OrderManagement.WebAPI.Controllers
         public async Task<IActionResult> GetOrder(Guid id)
         {
             var query = new GetOrderByIdQuery(id);
-            var order = await _mediator.Send(query);
+            var result = await sender.Send(query);
 
-            return order is null ? NotFound() : Ok(order);
+            if (result.IsFailure)
+                return result.ToProblemDetails();
+
+            return result.Value is null ? NotFound() : Ok(result.Value);
         }
     }
 
