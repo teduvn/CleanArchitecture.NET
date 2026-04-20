@@ -2,12 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using OrderManagement.Application.Common.Interfaces;
 using OrderManagement.Domain.Interfaces;
 using OrderManagement.Infrastructure.Email;
 using OrderManagement.Infrastructure.FileStorage;
 using OrderManagement.Infrastructure.Payment;
 using OrderManagement.Infrastructure.Persistence;
+using OrderManagement.Infrastructure.Persistence.Seeding;
 
 namespace OrderManagement.Infrastructure
 {
@@ -15,7 +17,7 @@ namespace OrderManagement.Infrastructure
     {
         public static IServiceCollection AddInfrastructureServices(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration, IHostEnvironment env)
         {
 
             // Đăng ký DbContext
@@ -31,6 +33,16 @@ namespace OrderManagement.Infrastructure
                             maxRetryDelay: TimeSpan.FromSeconds(5),
                             errorNumbersToAdd: null);
                     }));
+
+            // Đăng ký seeders
+            services.AddScoped<IDataSeeder, RoleSeedDataSeeder>();
+
+            // Development seeder chỉ đăng ký khi chạy dev environment
+            if (env.IsDevelopment())
+            {
+                services.AddScoped<IDataSeeder, DevelopmentOrderSeeder>();
+            }
+
 
             // Map interface IUnitOfWork sang ApplicationDbContext
             // Scoped để share instance trong cùng 1 request

@@ -1,4 +1,5 @@
 using OrderManagement.Application;
+using OrderManagement.WebAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,9 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// Gọi migration và seeding trước khi app lắng nghe request
+await app.InitialiseDatabaseAsync();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
