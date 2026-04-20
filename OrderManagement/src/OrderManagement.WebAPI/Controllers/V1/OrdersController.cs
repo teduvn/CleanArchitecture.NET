@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderManagement.Application.Orders.Commands.PlaceOrder;
@@ -6,11 +7,12 @@ using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Application.Orders.Queries;
 using OrderManagement.WebAPI.Extensions;
 
-namespace OrderManagement.WebAPI.Controllers
+namespace OrderManagement.WebAPI.Controllers.V1
 {
-    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/orders")]
     public class OrdersController(ISender sender) : BaseApiController(sender)
     {
         // POST /api/orders
