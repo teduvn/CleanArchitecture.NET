@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using OrderManagement.Application.Common;
 using OrderManagement.Application.Common.Interfaces;
+using OrderManagement.Application.Contracts;
 using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Entities;
@@ -18,13 +19,14 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;      // interface, không phải SendGrid
         private readonly IPaymentGateway _paymentGateway;  // interface, không phải Stripe
-
+        private readonly ICurrentUserService _currentUserService;
         public PlaceOrderCommandHandler(
             IOrderRepository orderRepository,
             ICustomerRepository customerRepository,
             IUnitOfWork unitOfWork,
             IEmailService emailService,
-            IPaymentGateway paymentGateway
+            IPaymentGateway paymentGateway,
+            ICurrentUserService currentUserService
         )
         {
             _orderRepository = orderRepository;
@@ -32,12 +34,18 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
             _unitOfWork = unitOfWork;
             _emailService = emailService;
             _paymentGateway = paymentGateway;
+            _currentUserService = currentUserService;
         }
 
         public async Task<Result<Guid>> Handle(
             PlaceOrderCommand command,
             CancellationToken cancellationToken)
         {
+            // Lấy userId — không cần biết JWT hay HttpContext
+            var userId = _currentUserService.UserId;
+            if (userId == null)
+                return Result<Guid>.Failure(Error.Create("UNAUTHORIZED", "User chưa đăng nhập."));
+
             var address = new Address(command.ShippingAddress.Street, command.ShippingAddress.City, command.ShippingAddress.Province, command.ShippingAddress.Country, command.ShippingAddress.PostalCode);
 
             // Step 1: Validate business preconditions
@@ -55,7 +63,7 @@ namespace OrderManagement.Application.Orders.Commands.PlaceOrder
 
             // Step 2: Delegate sang Domain để tạo Aggregate
             // Domain sẽ enforce invariant, throw DomainException nếu vi phạm
-            var orderResult = Order.CreateDraft(command.CustomerId, address);
+            var orderResult = Order.CreateDraft(userId.Value, address);
 
             // 2. Charge qua Payment Gateway
             var paymentResult = await _paymentGateway.ChargeAsync(

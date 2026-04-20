@@ -1,6 +1,8 @@
 ﻿using FluentAssertions;
 using NSubstitute;
+using OrderManagement.Application.Common.Exceptions;
 using OrderManagement.Application.Common.Interfaces;
+using OrderManagement.Application.Contracts;
 using OrderManagement.Application.Orders.Commands.PlaceOrder;
 using OrderManagement.Application.Orders.DTOs;
 using OrderManagement.Domain.Common;
@@ -22,6 +24,7 @@ namespace OrderManagement.Tests.Unit.Application.Orders
         private readonly PlaceOrderCommandHandler _sut;
         private readonly IEmailService _emailService = Substitute.For<IEmailService>();
         private readonly IPaymentGateway _paymentGateway = Substitute.For<IPaymentGateway>();
+        private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
 
         public PlaceOrderCommandHandlerTests()
         {
@@ -30,9 +33,67 @@ namespace OrderManagement.Tests.Unit.Application.Orders
             _customerRepo = Substitute.For<ICustomerRepository>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
 
+            // Mock authenticated user
+            _currentUserService.UserId.Returns(Guid.NewGuid());
+            _currentUserService.IsAuthenticated.Returns(true);
+
             _sut = new PlaceOrderCommandHandler(
-                _orderRepo, _customerRepo, _unitOfWork, _emailService, _paymentGateway);
+                _orderRepo, _customerRepo, _unitOfWork, _emailService, _paymentGateway, _currentUserService);
         }
+
+        [Fact]
+        public async Task Handle_UnauthenticatedUser_ShouldReturnUnauthorizedError()
+        {
+            // Arrange
+            var unauthenticatedUserService = Substitute.For<ICurrentUserService>();
+            unauthenticatedUserService.UserId.Returns((Guid?)null);
+            unauthenticatedUserService.IsAuthenticated.Returns(false);
+
+            var handler = new PlaceOrderCommandHandler(
+                _orderRepo, 
+                _customerRepo, 
+                _unitOfWork, 
+                _emailService, 
+                _paymentGateway, 
+                unauthenticatedUserService);
+
+            var command = new PlaceOrderCommand
+            {
+                CustomerId = Guid.NewGuid(),
+                ShippingAddress = new AddressDto
+                {
+                    Street = "123 Main St",
+                    City = "Hanoi",
+                    Province = "Hanoi",
+                    Country = "Vietnam",
+                    PostalCode = "100000"
+                },
+                Items = new List<OrderItemDto>
+                {
+                    new OrderItemDto
+                    {
+                        ProductId = Guid.NewGuid(),
+                        ProductName = "Product A",
+                        UnitPrice = 15.00m,
+                        Currency = "VND",
+                        Quantity = 2
+                    }
+                }
+            };
+
+            // Act
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Code.Should().Be("UNAUTHORIZED");
+            result.Error.Description.Should().Be("User chưa đăng nhập.");
+
+            // Verify: không có thao tác nào được thực hiện khi unauthenticated
+            _orderRepo.DidNotReceive().Add(Arg.Any<Order>());
+            await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
 
         // Test 1: Happy path — order được tạo thành công
         [Fact]

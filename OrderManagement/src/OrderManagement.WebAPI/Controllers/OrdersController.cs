@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderManagement.Application.Orders.Commands.PlaceOrder;
 using OrderManagement.Application.Orders.DTOs;
@@ -9,6 +10,7 @@ namespace OrderManagement.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OrdersController(ISender sender) : BaseApiController(sender)
     {
         // POST /api/orders
@@ -44,6 +46,7 @@ namespace OrderManagement.WebAPI.Controllers
 
         // GET /api/orders/{id}
         [HttpGet("{id:guid}")]
+        [Authorize(Policy = "MustOwnOrder")]
         public async Task<IActionResult> GetOrder(Guid id)
         {
             var query = new GetOrderByIdQuery(id);
@@ -54,6 +57,12 @@ namespace OrderManagement.WebAPI.Controllers
 
             return result.Value is null ? NotFound() : Ok(result.Value);
         }
+
+        //[HttpPut("{id}/cancel")]
+        //[Authorize(Policy = "MustOwnOrder")]
+        //public async Task<IActionResult> Cancel(Guid id)
+        //    => Ok(await sender.Send(new CancelOrder(id)));
+
     }
 
 }

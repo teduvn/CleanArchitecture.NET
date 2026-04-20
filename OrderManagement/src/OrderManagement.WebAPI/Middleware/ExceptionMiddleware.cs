@@ -96,6 +96,15 @@ namespace OrderManagement.WebAPI.Middleware
                     Instance = instance
                 }),
 
+                UnauthorizedException ue => (401, new ProblemDetails
+                {
+                    Type = "https://tools.ietf.org/html/rfc7235#section-3.1",
+                    Title = "Unauthorized",
+                    Status = 401,
+                    Detail = ue.Message,
+                    Instance = instance
+                }),
+
                 ForbiddenException => (403, new ProblemDetails
                 {
                     Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
