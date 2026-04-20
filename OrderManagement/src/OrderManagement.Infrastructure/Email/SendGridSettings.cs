@@ -6,7 +6,10 @@ namespace OrderManagement.Infrastructure.Email
 {
     public class SendGridSettings
     {
-        public string ApiKey { get; set; }
-        public string FromEmail { get; set; }
+        public const string SectionName = "SendGrid";
+
+        public string ApiKey { get; set; } = string.Empty;
+        public string SenderEmail { get; set; } = string.Empty;
+        public string SenderName { get; set; } = "TEDU Order System";
     }
 }

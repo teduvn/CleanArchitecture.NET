@@ -6,6 +6,9 @@ namespace OrderManagement.Infrastructure.Payment
 {
     public class StripeSettings
     {
-        public string SecretKey { get; set; } = null!;
+        public const string SectionName = "Stripe";
+
+        public string SecretKey { get; set; } = string.Empty;
+        public string WebhookSecret { get; set; } = string.Empty;
     }
 }

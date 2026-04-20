@@ -5,11 +5,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OrderManagement.Application.Common.Interfaces;
 using OrderManagement.Domain.Interfaces;
+using OrderManagement.Domain.Repositories;
+using OrderManagement.Infrastructure.Caching;
 using OrderManagement.Infrastructure.Email;
 using OrderManagement.Infrastructure.FileStorage;
 using OrderManagement.Infrastructure.Payment;
 using OrderManagement.Infrastructure.Persistence;
+using OrderManagement.Infrastructure.Persistence.Repositories;
 using OrderManagement.Infrastructure.Persistence.Seeding;
+using OrderManagement.Infrastructure.Resilience;
+using Polly;
+using StackExchange.Redis;
+using Stripe;
 
 namespace OrderManagement.Infrastructure
 {
@@ -19,7 +26,21 @@ namespace OrderManagement.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration, IHostEnvironment env)
         {
+            services
+               .AddPersistence(configuration, env)
+               .AddRepositories()
+               .AddExternalServices(configuration)
+               .AddCaching(configuration);
 
+                return services;
+        }
+
+        // ── Persistence ──────────────────────────────────────────────────
+        private static IServiceCollection AddPersistence(
+            this IServiceCollection services,
+            IConfiguration configuration,
+            IHostEnvironment env)
+        {
             // Đăng ký DbContext
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(
@@ -33,6 +54,10 @@ namespace OrderManagement.Infrastructure
                             maxRetryDelay: TimeSpan.FromSeconds(5),
                             errorNumbersToAdd: null);
                     }));
+            // Map interface IUnitOfWork sang ApplicationDbContext
+            // Scoped để share instance trong cùng 1 request
+            services.AddScoped<IUnitOfWork>(
+                sp => sp.GetRequiredService<ApplicationDbContext>());
 
             // Đăng ký seeders
             services.AddScoped<IDataSeeder, RoleSeedDataSeeder>();
@@ -44,23 +69,83 @@ namespace OrderManagement.Infrastructure
             }
 
 
-            // Map interface IUnitOfWork sang ApplicationDbContext
-            // Scoped để share instance trong cùng 1 request
-            services.AddScoped<IUnitOfWork>(
-                sp => sp.GetRequiredService<ApplicationDbContext>());
-
-
-            // Đăng ký implementation cho interface từ Application
-            services.AddScoped<IEmailService, SendGridEmailService>();
-            services.AddScoped<IPaymentGateway, StripePaymentGateway>();
-            services.AddScoped<IFileStorage, AzureBlobFileStorage>();
-
-            // Cấu hình từ appsettings.json
-            services.Configure<SendGridSettings>(configuration.GetSection("SendGrid"));
-            services.Configure<StripeSettings>(configuration.GetSection("Stripe"));
 
             return services;
         }
+
+        // ── Repositories ─────────────────────────────────────────────────
+        private static IServiceCollection AddRepositories(
+            this IServiceCollection services)
+        {
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            return services;
+        }
+
+        // ── External Services ─────────────────────────────────────────────
+        private static IServiceCollection AddExternalServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // Cấu hình từ appsettings.json
+            services.Configure<SendGridSettings>(configuration.GetSection(SendGridSettings.SectionName));
+            services.Configure<StripeSettings>(configuration.GetSection(StripeSettings.SectionName));
+
+            StripeConfiguration.ApiKey = configuration["Stripe:SecretKey"];
+            services.AddTransient<PaymentIntentService>();
+
+            // Đăng ký service implementations
+            services.AddTransient<IEmailService, SendGridEmailService>();
+            services.AddTransient<IPaymentGateway, StripePaymentGateway>();
+            services.AddTransient<IFileStorage, AzureBlobFileStorage>();
+
+            // HttpClient với Polly policy cho external HTTP calls
+            // Policy = Retry bên trong CircuitBreaker (thứ tự quan trọng)
+            var retryPolicy = ResiliencePolicies.GetRetryPolicy();
+            var circuitBreakerPolicy = ResiliencePolicies.GetCircuitBreakerPolicy();
+            var policyWrap = Policy.WrapAsync(circuitBreakerPolicy, retryPolicy);
+
+            services.AddHttpClient("ExternalServices")
+                .AddPolicyHandler(policyWrap);
+
+
+
+            return services;
+        }
+
+        // ── Caching ───────────────────────────────────────────────────────
+        private static IServiceCollection AddCaching(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // ── Cache ──
+            var cacheSettings = configuration
+                .GetSection(CacheSettings.SectionName)
+                .Get<CacheSettings>()!;
+
+            services.AddSingleton(cacheSettings);
+
+            services.AddSingleton<IConnectionMultiplexer>(_ =>
+                ConnectionMultiplexer.Connect(cacheSettings.ConnectionString));
+
+            // Đăng ký ICacheService — interface ở Application, impl ở Infrastructure
+            // Thêm vào DependencyInjection.cs
+            if (configuration.GetValue<bool>("Cache:UseInMemory"))
+            {
+                services.AddMemoryCache();
+                services.AddSingleton<ICacheService, InMemoryCacheService>();
+            }
+            else
+            {
+                services.AddSingleton<IConnectionMultiplexer>(_ =>
+                    ConnectionMultiplexer.Connect(cacheSettings.ConnectionString));
+                services.AddSingleton<ICacheService, RedisCacheService>();
+            }
+
+
+            return services;
+        }
+
+
     }
 
 }

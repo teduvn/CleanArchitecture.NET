@@ -28,3 +28,6 @@ sqlcmd -S staging-db -U dbuser -P pass -d OrderManagement -i migration_20250115.
 # Bước 4: Verify staging hoạt động bình thường
 # Bước 5: Apply lên production trong maintenance window
 sqlcmd -S prod-db -U dbuser -P pass -d OrderManagement -i migration_20250115.sql
+
+
+dotnet user-secrets set "SendGrid:ApiKey" "SG.xxxxx"
