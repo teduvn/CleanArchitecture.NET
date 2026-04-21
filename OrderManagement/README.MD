@@ -31,3 +31,5 @@ sqlcmd -S prod-db -U dbuser -P pass -d OrderManagement -i migration_20250115.sql
 
 
 dotnet user-secrets set "SendGrid:ApiKey" "SG.xxxxx"
+
+dotnet ef migrations add AddIdentityTables --project src/OrderManagement.Infrastructure --startup-project src/OrderManagement.WebAPI --output-dir Persistence/Migrations

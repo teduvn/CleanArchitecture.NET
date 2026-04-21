@@ -1,9 +1,11 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Application.Common.Interfaces;
 using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Entities;
 using OrderManagement.Domain.Interfaces;
+using OrderManagement.Infrastructure.Identity;
 using OrderManagement.Infrastructure.Persistence.Outbox;
 using System;
 using System.Collections.Generic;
@@ -12,12 +14,13 @@ using System.Text.Json;
 
 namespace OrderManagement.Infrastructure.Persistence
 {
-    public class ApplicationDbContext : DbContext, IApplicationDbContext, IUnitOfWork
+    public class ApplicationDbContext : IdentityDbContext<AppUser, AppRole, Guid>, IApplicationDbContext, IUnitOfWork
     {
         public DbSet<Order> Orders => Set<Order>();
         public DbSet<Product> Products => Set<Product>();
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<Voucher> Vouchers => Set<Voucher>();
+        public new DbSet<User> Users => Set<User>();
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
         private readonly IPublisher _publisher;
@@ -96,10 +99,10 @@ namespace OrderManagement.Infrastructure.Persistence
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             // Apply tất cả IEntityTypeConfiguration trong assembly này
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
-
-            base.OnModelCreating(modelBuilder);
         }
 
 

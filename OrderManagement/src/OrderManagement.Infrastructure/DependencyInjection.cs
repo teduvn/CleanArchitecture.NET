@@ -3,11 +3,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OrderManagement.Application.Common.Interfaces;
+using OrderManagement.Application.Contracts;
 using OrderManagement.Domain.Interfaces;
 using OrderManagement.Domain.Repositories;
+using OrderManagement.Infrastructure.Auth;
 using OrderManagement.Infrastructure.Caching;
 using OrderManagement.Infrastructure.Email;
 using OrderManagement.Infrastructure.FileStorage;
+using OrderManagement.Infrastructure.Identity;
 using OrderManagement.Infrastructure.Payment;
 using OrderManagement.Infrastructure.Persistence;
 using OrderManagement.Infrastructure.Persistence.Repositories;
@@ -18,6 +21,7 @@ using Polly;
 using SendGrid;
 using StackExchange.Redis;
 using Stripe;
+using IdentityService = OrderManagement.Infrastructure.Services.IdentityService;
 
 namespace OrderManagement.Infrastructure
 {
@@ -30,6 +34,7 @@ namespace OrderManagement.Infrastructure
             services
                .AddPersistence(configuration, env)
                .AddRepositories()
+               .AddAspNetCoreIdentity(configuration)
                .AddExternalServices(configuration)
                .AddCaching(configuration);
 
@@ -78,6 +83,7 @@ namespace OrderManagement.Infrastructure
 
             // Đăng ký seeders
             services.AddScoped<IDataSeeder, RoleSeedDataSeeder>();
+            services.AddScoped<IDataSeeder, AdminUserSeeder>();
 
             // Development seeder chỉ đăng ký khi chạy dev environment
             if (env.IsDevelopment())
@@ -97,6 +103,7 @@ namespace OrderManagement.Infrastructure
         {
             services.AddScoped<IOrderRepository, OrderRepository>();
             services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
             return services;
         }
 
@@ -173,7 +180,33 @@ namespace OrderManagement.Infrastructure
             return services;
         }
 
+        private static IServiceCollection AddAspNetCoreIdentity(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // ASP.NET Core Identity
+            services
+                .AddIdentityCore<AppUser>(options =>
+                {
+                    options.Password.RequiredLength = 8;
+                    options.Password.RequireDigit = true;
+                    options.Password.RequireLowercase = true;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.User.RequireUniqueEmail = true;
+                    options.Lockout.MaxFailedAccessAttempts = 5;
+                    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                })
+                .AddRoles<AppRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>();
+                // Note: AddDefaultTokenProviders() thường dùng cho password reset, email confirmation
+                // Nếu cần 2FA hoặc password reset, có thể thêm các token providers riêng
+                // hoặc sử dụng AddIdentity() thay vì AddIdentityCore()
 
+            services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            return services;
+        }
     }
 
 }
