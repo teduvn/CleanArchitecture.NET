@@ -19,7 +19,7 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    Log.Information("Khởi động OrderManagement API...");
+    Log.Information("Starting OrderManagement API...");
     var builder = WebApplication.CreateBuilder(args);
 
     // Thay thế ILogger mặc định của .NET bằng Serilog
@@ -135,7 +135,7 @@ try
                 .WithTitle("Order Management API")
                 .WithTheme(ScalarTheme.Purple)
                 .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-                .WithPreferredScheme("Bearer");
+                .AddPreferredSecuritySchemes("Bearer");
         });
 
     }
@@ -145,15 +145,18 @@ try
     app.UseAuthorization();
     app.MapControllers();
 
+    var urls = app.Urls.Any() ? string.Join(", ", app.Urls) : builder.Configuration["ASPNETCORE_URLS"] ?? "http://localhost:5000";
+    Log.Information("Application started. Listening on: {Urls}", urls);
+
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "API khởi động thất bại");
+    Log.Fatal(ex, "API starting failed");
 }
 finally
 {
-    Log.CloseAndFlush(); // Quan trọng: flush buffer trước khi tắt
+    Log.CloseAndFlush(); // Important: flush buffer before shutting down
 }
 
 

@@ -44,6 +44,7 @@ namespace OrderManagement.Infrastructure
         {
             // Đăng ký DbContext
             services.AddDbContext<ApplicationDbContext>(options =>
+            {
                 options.UseSqlServer(
                     configuration.GetConnectionString("DefaultConnection"),
                     sqlOptions =>
@@ -54,7 +55,15 @@ namespace OrderManagement.Infrastructure
                             maxRetryCount: 3,
                             maxRetryDelay: TimeSpan.FromSeconds(5),
                             errorNumbersToAdd: null);
-                    }));
+                    });
+
+                // Enable sensitive data logging in development
+                if (env.IsDevelopment())
+                {
+                    options.EnableSensitiveDataLogging();
+                    options.EnableDetailedErrors();
+                }
+            });
             // Map interface IUnitOfWork sang ApplicationDbContext
             // Scoped để share instance trong cùng 1 request
             services.AddScoped<IUnitOfWork>(
@@ -73,6 +82,7 @@ namespace OrderManagement.Infrastructure
             // Development seeder chỉ đăng ký khi chạy dev environment
             if (env.IsDevelopment())
             {
+                services.AddScoped<IDataSeeder, DevelopmentCustomerSeeder>();
                 services.AddScoped<IDataSeeder, DevelopmentOrderSeeder>();
             }
 

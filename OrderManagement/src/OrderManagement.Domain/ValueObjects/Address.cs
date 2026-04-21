@@ -5,13 +5,27 @@ using System.Text;
 
 namespace OrderManagement.Domain.ValueObjects
 {
-    public sealed record Address(
-     string Street,
-     string City,
-     string Province,
-     string Country,
-     string? PostalCode = null)
+    public sealed record Address
     {
+        public string Street { get; init; } = string.Empty;
+        public string City { get; init; } = string.Empty;
+        public string Province { get; init; } = string.Empty;
+        public string Country { get; init; } = string.Empty;
+        public string? PostalCode { get; init; }
+
+        // Constructor để tương thích với code hiện tại
+        public Address(string street, string city, string province, string country, string? postalCode = null)
+        {
+            Street = street;
+            City = city;
+            Province = province;
+            Country = country;
+            PostalCode = postalCode;
+        }
+
+        // Parameterless constructor cho EF Core
+        private Address() { }
+
         public static Address Create(
             string street, string city, string province,
             string country, string? postalCode = null)

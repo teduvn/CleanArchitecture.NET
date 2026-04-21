@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderManagement.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using OrderManagement.Infrastructure.Persistence;
 namespace OrderManagement.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420222804_AddDefaultValueToCustomerRowVersion")]
+    partial class AddDefaultValueToCustomerRowVersion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -261,7 +264,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("OutboxMessages", (string)null);
+                    b.ToTable("OutboxMessages");
                 });
 
             modelBuilder.Entity("OrderManagement.Domain.Entities.Customer", b =>
@@ -302,7 +305,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("CustomerId");
 
-                            b1.ToTable("Customers", (string)null);
+                            b1.ToTable("Customers");
 
                             b1.WithOwner()
                                 .HasForeignKey("CustomerId");
@@ -349,7 +352,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("OrderId");
 
-                            b1.ToTable("Orders", (string)null);
+                            b1.ToTable("Orders");
 
                             b1.WithOwner()
                                 .HasForeignKey("OrderId");
@@ -372,7 +375,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("OrderId");
 
-                            b1.ToTable("Orders", (string)null);
+                            b1.ToTable("Orders");
 
                             b1.WithOwner()
                                 .HasForeignKey("OrderId");
@@ -416,7 +419,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("OrderItemId");
 
-                            b1.ToTable("OrderItems", (string)null);
+                            b1.ToTable("OrderItems");
 
                             b1.WithOwner()
                                 .HasForeignKey("OrderItemId");
@@ -447,7 +450,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("ProductId");
 
-                            b1.ToTable("Products", (string)null);
+                            b1.ToTable("Products");
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId");
@@ -476,7 +479,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("VoucherId");
 
-                            b1.ToTable("Vouchers", (string)null);
+                            b1.ToTable("Vouchers");
 
                             b1.WithOwner()
                                 .HasForeignKey("VoucherId");
@@ -499,7 +502,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("VoucherId");
 
-                            b1.ToTable("Vouchers", (string)null);
+                            b1.ToTable("Vouchers");
 
                             b1.WithOwner()
                                 .HasForeignKey("VoucherId");

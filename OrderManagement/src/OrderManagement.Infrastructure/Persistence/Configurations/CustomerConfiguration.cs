@@ -79,7 +79,8 @@ namespace OrderManagement.Infrastructure.Persistence.Configurations
 
             // 5. Concurrency token
             builder.Property<uint>("RowVersion")
-                   .IsRowVersion();
+                   .IsRowVersion()
+                   .HasDefaultValue(0u);
         }
     }
 }

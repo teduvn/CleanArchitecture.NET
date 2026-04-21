@@ -31,7 +31,7 @@ namespace OrderManagement.Domain.Entities
         private Order() { }
 
         // Factory method for creating draft order without items
-        public static Result<Order> CreateDraft(Guid customerId, Address shippingAddress)
+        public static Result<Order> CreateDraft(Guid customerId, Address shippingAddress, string customerEmail = "")
         {
             ArgumentException.ThrowIfNullOrEmpty(customerId.ToString());
             if (customerId == Guid.Empty)
@@ -44,6 +44,7 @@ namespace OrderManagement.Domain.Entities
                 Id = Guid.NewGuid(),
                 CustomerId = customerId,
                 ShippingAddress = shippingAddress,
+                CustomerEmail = customerEmail,
                 Status = OrderStatus.Draft,
                 TotalAmount = Money.ZeroOf("VND"),
                 CreatedAt = DateTime.UtcNow
