@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using OrderManagement.Application.Common.Behaviors;
+using OrderManagement.Application.Common.Interfaces;
 using OrderManagement.Domain.Common;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,9 @@ namespace OrderManagement.Tests.Unit.Application.Common.Behaviors
         {
             // Arrange
             var logger = Substitute.For<ILogger<LoggingBehavior<TestCommand, Result<Guid>>>>();
-            var behavior = new LoggingBehavior<TestCommand, Result<Guid>>(logger);
+            var correlationIdService = Substitute.For<ICorrelationIdService>();
+            correlationIdService.CorrelationId.Returns("test-correlation-id");
+            var behavior = new LoggingBehavior<TestCommand, Result<Guid>>(logger, correlationIdService);
             var command = new TestCommand();
             var expectedGuid = Guid.NewGuid();
             var expectedResult = Result<Guid>.Success(expectedGuid);
@@ -52,7 +55,9 @@ namespace OrderManagement.Tests.Unit.Application.Common.Behaviors
         {
             // Arrange
             var logger = Substitute.For<ILogger<LoggingBehavior<TestCommand, Result<Guid>>>>();
-            var behavior = new LoggingBehavior<TestCommand, Result<Guid>>(logger);
+            var correlationIdService = Substitute.For<ICorrelationIdService>();
+            correlationIdService.CorrelationId.Returns("test-correlation-id");
+            var behavior = new LoggingBehavior<TestCommand, Result<Guid>>(logger, correlationIdService);
             var command = new TestCommand();
             var expectedException = new InvalidOperationException("Test exception");
 
